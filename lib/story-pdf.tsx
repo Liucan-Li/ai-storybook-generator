@@ -1,18 +1,5 @@
-import { Document, Page, Image, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Image, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { Story } from '@/types';
-
-// Register Chinese font (safe at module level in this version)
-try {
-  Font.register({
-    family: 'Noto Sans SC',
-    fonts: [
-      { src: '/fonts/NotoSansSC-Regular.ttf', fontWeight: 400 },
-      { src: '/fonts/NotoSansSC-Bold.ttf', fontWeight: 700 },
-    ],
-  });
-} catch {
-  // Font already registered or SSR context
-}
 
 const styles = StyleSheet.create({
   page: { padding: 40, backgroundColor: '#fffdf7', fontFamily: 'Noto Sans SC' },

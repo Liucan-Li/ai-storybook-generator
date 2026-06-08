@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { pdf } from '@react-pdf/renderer';
+import { pdf, Font } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
 import { StoryPDFDocument } from '@/lib/story-pdf';
 import { preloadStoryImages, getCachedImage } from '@/lib/image-cache';
@@ -104,6 +104,24 @@ export default function StoryReaderPage() {
       );
 
       const storyWithImages = { ...story, pages: pagesWithEmbeddedImages };
+      // Load Chinese font before generating PDF
+      try {
+        const fontRes = await fetch('/fonts/NotoSansSC-Regular.ttf');
+        const fontBlob = await fontRes.blob();
+        const fontDataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(fontBlob);
+        });
+        Font.register({
+          family: 'Noto Sans SC',
+          fonts: [
+            { src: fontDataUrl, fontWeight: 400 },
+          ],
+        });
+      } catch {
+        // Font registration failed, will use default
+      }
       const blob = await pdf(<StoryPDFDocument story={storyWithImages} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

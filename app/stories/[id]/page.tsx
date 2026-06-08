@@ -74,6 +74,27 @@ export default function StoryReaderPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
+      // Pre-fetch images through same-origin proxy (bypasses CORS) as data URIs
+      const enrichedPages = await Promise.all(
+        story.pages.map(async (p) => {
+          if (!p.imageUrl) return p;
+          try {
+            const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(p.imageUrl)}`;
+            const res = await fetch(proxyUrl);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            return { ...p, imageUrl: dataUrl };
+          } catch {
+            return p;
+          }
+        })
+      );
+      const enrichedStory = { ...story, pages: enrichedPages };
+
       // Load Chinese font before generating PDF
       try {
         const fontRes = await fetch('/fonts/NotoSansSC-Regular.ttf');
@@ -90,7 +111,7 @@ export default function StoryReaderPage() {
       } catch {
         // Font fallback
       }
-      const blob = await pdf(<StoryPDFDocument story={story} />).toBlob();
+      const blob = await pdf(<StoryPDFDocument story={enrichedStory} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

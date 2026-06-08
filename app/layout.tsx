@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -16,9 +17,9 @@ export default function RootLayout({
       <body className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 antialiased">
         <header className="border-b border-amber-200 bg-white/80 backdrop-blur-sm">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-            <a href="/" className="text-xl font-bold text-amber-800">
+            <Link href="/" className="text-xl font-bold text-amber-800">
               AI 故事绘本
-            </a>
+            </Link>
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-4 py-6">

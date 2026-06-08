@@ -37,7 +37,7 @@ export default function StoryReaderPage() {
     );
   }
 
-  if (!story) {
+  if (!story || !story.pages || story.pages.length === 0) {
     return (
       <div className="mt-20 text-center">
         <p className="mb-4 text-lg text-amber-700">故事未找到</p>

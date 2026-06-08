@@ -23,19 +23,30 @@ export async function POST(request: NextRequest) {
       body.ageRange
     );
 
-    // Step 2: 并行生成所有插图
-    const pagePromises = outline.pages.map(async (p, index) => {
-      const prompt = buildImagePrompt(p.imagePrompt, body.characters || []);
-      const imageUrl = await generateIllustration(prompt, body.style);
+    // Step 2: 并行生成所有插图（允许部分失败）
+    const results = await Promise.allSettled(
+      outline.pages.map(async (p, index) => {
+        const prompt = buildImagePrompt(p.imagePrompt, body.characters || []);
+        const imageUrl = await generateIllustration(prompt, body.style);
+        return {
+          pageNumber: index + 1,
+          text: p.text,
+          imagePrompt: p.imagePrompt,
+          imageUrl,
+        } as Page;
+      })
+    );
+
+    const pages: Page[] = results.map((r, i) => {
+      if (r.status === 'fulfilled') return r.value;
+      console.error(`第 ${i + 1} 页插图生成失败:`, r.reason);
       return {
-        pageNumber: index + 1,
-        text: p.text,
-        imagePrompt: p.imagePrompt,
-        imageUrl,
+        pageNumber: i + 1,
+        text: outline.pages[i].text,
+        imagePrompt: outline.pages[i].imagePrompt,
+        imageUrl: null,
       } as Page;
     });
-
-    const pages = await Promise.all(pagePromises);
 
     // Step 3: 保存故事
     const story: Story = {

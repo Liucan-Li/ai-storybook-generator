@@ -11,7 +11,7 @@ export interface Page {
   pageNumber: number;
   text: string;
   imagePrompt: string;
-  imageUrl: string;
+  imageUrl: string | null;
 }
 
 export interface Story {

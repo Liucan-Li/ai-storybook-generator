@@ -2,7 +2,10 @@ import { Story } from '@/types';
 import fs from 'fs';
 import path from 'path';
 
-const STORIES_DIR = path.join(process.cwd(), '.stories');
+const STORIES_DIR = path.join(
+  process.env.VERCEL ? '/tmp' : process.cwd(),
+  '.stories'
+);
 
 function ensureDir() {
   if (!fs.existsSync(STORIES_DIR)) {

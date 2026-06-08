@@ -87,26 +87,6 @@ export default function StoryReaderPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      // Pre-fetch all images as base64 data URIs for PDF embedding
-      const pagesWithEmbeddedImages = await Promise.all(
-        story.pages.map(async (page) => {
-          if (!page.imageUrl) return { ...page, imageData: null };
-          try {
-            const res = await fetch(page.imageUrl);
-            const blob = await res.blob();
-            const dataUrl = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            return { ...page, imageData: dataUrl };
-          } catch {
-            return { ...page, imageData: null };
-          }
-        })
-      );
-
-      const storyWithImages = { ...story, pages: pagesWithEmbeddedImages };
       // Load Chinese font before generating PDF
       try {
         const fontRes = await fetch('/fonts/NotoSansSC-Regular.ttf');
@@ -118,14 +98,12 @@ export default function StoryReaderPage() {
         });
         Font.register({
           family: 'Noto Sans SC',
-          fonts: [
-            { src: fontDataUrl, fontWeight: 400 },
-          ],
+          fonts: [{ src: fontDataUrl, fontWeight: 400 }],
         });
       } catch {
-        // Font registration failed, will use default
+        // Font fallback
       }
-      const blob = await pdf(<StoryPDFDocument story={storyWithImages} />).toBlob();
+      const blob = await pdf(<StoryPDFDocument story={story} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

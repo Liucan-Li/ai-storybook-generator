@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { pdf, Font } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
 import { StoryPDFDocument } from '@/lib/story-pdf';
-import { preloadImages, getOrFetchDataUrl } from '@/lib/image-cache';
 
 const styleLabels: Record<StoryStyle, string> = {
   watercolor: '水彩',
@@ -21,26 +20,6 @@ export default function StoryReaderPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [imageBlobUrls, setImageBlobUrls] = useState<Record<string, string>>({});
-  const [imageLoading, setImageLoading] = useState<Record<string, boolean>>({});
-
-  // Cache-first image preload: Cache API → network
-  useEffect(() => {
-    if (!story?.pages) return;
-    const urls = story.pages.map(p => p.imageUrl).filter((u): u is string => u !== null);
-
-    // Show loading state for all uncached images immediately
-    const loading: Record<string, boolean> = {};
-    for (const url of urls) loading[url] = true;
-    setImageLoading(loading);
-
-    preloadImages(urls).then((results) => {
-      setImageBlobUrls(results);
-      const done: Record<string, boolean> = {};
-      for (const url of urls) done[url] = false;
-      setImageLoading(done);
-    });
-  }, [story]);
 
   useEffect(() => {
     fetch(`/api/stories/${params.id}`)
@@ -84,12 +63,18 @@ export default function StoryReaderPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      // Use cached data URIs for PDF (blob URLs don't work in react-pdf)
+      // Pre-fetch images as data URIs for PDF embedding
       const enrichedPages = await Promise.all(
         story.pages.map(async (p) => {
           if (!p.imageUrl) return p;
           try {
-            const dataUrl = await getOrFetchDataUrl(p.imageUrl);
+            const res = await fetch(p.imageUrl);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
             return { ...p, imageUrl: dataUrl };
           } catch {
             return p;
@@ -143,21 +128,11 @@ export default function StoryReaderPage() {
           {/* 插图 */}
           <div className="aspect-[4/3] bg-amber-50">
             {page.imageUrl ? (
-              imageBlobUrls[page.imageUrl] ? (
-                <img
-                  src={imageBlobUrls[page.imageUrl]}
-                  alt={`第 ${page.pageNumber} 页`}
-                  className="h-full w-full object-cover"
-                />
-              ) : imageLoading[page.imageUrl] ? (
-                <div className="flex h-full w-full animate-pulse items-center justify-center bg-amber-100">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-600" />
-                </div>
-              ) : (
-                <div className="flex h-full items-center justify-center text-amber-300">
-                  插图加载失败
-                </div>
-              )
+              <img
+                src={page.imageUrl}
+                alt={`第 ${page.pageNumber} 页`}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-amber-300">
                 插图生成中...

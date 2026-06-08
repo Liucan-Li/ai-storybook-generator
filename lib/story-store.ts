@@ -19,8 +19,12 @@ export function saveStory(story: Story): void {
 export function getStory(id: string): Story | null {
   const filePath = path.join(STORIES_DIR, `${id}.json`);
   if (!fs.existsSync(filePath)) return null;
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw) as Story;
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw) as Story;
+  } catch {
+    return null;
+  }
 }
 
 export function listStories(): Story[] {

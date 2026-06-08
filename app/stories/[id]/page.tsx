@@ -135,7 +135,7 @@ export default function StoryReaderPage() {
         {/* 页面卡片 */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-amber-200/50">
           {/* 插图 */}
-          <div className="aspect-[4/3] bg-amber-50 relative">
+          <div className="aspect-[4/3] bg-amber-50">
             {page.imageUrl ? (
               <>
                 {!loadedImages.has(page.pageNumber) && (
@@ -156,27 +156,6 @@ export default function StoryReaderPage() {
                 插图不可用
               </div>
             )}
-            {/* 左右翻页按钮 - 悬浮在图片区域 */}
-            <button
-              onClick={goPrev}
-              disabled={currentPage === 0}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm transition hover:bg-white active:scale-95 disabled:opacity-30"
-              aria-label="上一页"
-            >
-              <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={goNext}
-              disabled={currentPage === totalPages - 1}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm transition hover:bg-white active:scale-95 disabled:opacity-30"
-              aria-label="下一页"
-            >
-              <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
           {/* 文字 */}
           <div className="p-6 text-center">
@@ -185,9 +164,31 @@ export default function StoryReaderPage() {
         </div>
       </div>
 
-      {/* 页码 */}
-      <div className="mt-4 text-sm text-amber-600">
-        第 {currentPage + 1} 页 / 共 {totalPages} 页
+      {/* 页码 + 翻页按钮 */}
+      <div className="mt-4 flex items-center gap-4">
+        <button
+          onClick={goPrev}
+          disabled={currentPage === 0}
+          className="rounded-full p-1.5 text-amber-600 transition hover:bg-amber-100 active:scale-95 disabled:opacity-30"
+          aria-label="上一页"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="text-sm text-amber-600 min-w-[80px] text-center">
+          第 {currentPage + 1} 页 / 共 {totalPages} 页
+        </span>
+        <button
+          onClick={goNext}
+          disabled={currentPage === totalPages - 1}
+          className="rounded-full p-1.5 text-amber-600 transition hover:bg-amber-100 active:scale-95 disabled:opacity-30"
+          aria-label="下一页"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       {/* 操作按钮 */}

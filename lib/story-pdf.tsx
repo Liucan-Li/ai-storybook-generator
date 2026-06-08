@@ -1,58 +1,33 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { Document, Page, Image, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { Story } from '@/types';
 
-export function StoryPDFDocument({ story }: { story: Story }) {
-  const [PDFComponents, setPDFComponents] = useState<{
-    Document: any;
-    Page: any;
-    Image: any;
-    Text: any;
-    View: any;
-    StyleSheet: any;
-  } | null>(null);
-
-  useEffect(() => {
-    import('@react-pdf/renderer').then((mod) => {
-      // Register fonts once
-      mod.Font.register({
-        family: 'Noto Sans SC',
-        fonts: [
-          { src: '/fonts/NotoSansSC-Regular.ttf', fontWeight: 400 },
-          { src: '/fonts/NotoSansSC-Bold.ttf', fontWeight: 700 },
-        ],
-      });
-
-      setPDFComponents({
-        Document: mod.Document,
-        Page: mod.Page,
-        Image: mod.Image,
-        Text: mod.Text,
-        View: mod.View,
-        StyleSheet: mod.StyleSheet,
-      });
-    });
-  }, []);
-
-  if (!PDFComponents) return null;
-
-  const { Document, Page, Image, Text, View, StyleSheet } = PDFComponents;
-
-  const styles = StyleSheet.create({
-    page: { padding: 40, backgroundColor: '#fffdf7', fontFamily: 'Noto Sans SC' },
-    coverPage: {
-      padding: 40, backgroundColor: '#fffdf7', justifyContent: 'center',
-      alignItems: 'center', fontFamily: 'Noto Sans SC',
-    },
-    coverTitle: { fontSize: 36, fontWeight: 700, color: '#92400e', textAlign: 'center', marginBottom: 16 },
-    coverMeta: { fontSize: 14, color: '#b45309', textAlign: 'center', marginBottom: 8 },
-    imageContainer: { marginBottom: 20, borderRadius: 8 },
-    image: { width: '100%', height: 280, objectFit: 'cover' as const },
-    textContent: { fontSize: 16, lineHeight: 1.8, color: '#78350f', textAlign: 'center', paddingHorizontal: 20 },
-    pageNumber: { fontSize: 10, color: '#d97706', textAlign: 'center', marginTop: 20, position: 'absolute' as const, bottom: 30, left: 0, right: 0 },
+// Register Chinese font (safe at module level in this version)
+try {
+  Font.register({
+    family: 'Noto Sans SC',
+    fonts: [
+      { src: '/fonts/NotoSansSC-Regular.ttf', fontWeight: 400 },
+      { src: '/fonts/NotoSansSC-Bold.ttf', fontWeight: 700 },
+    ],
   });
+} catch {
+  // Font already registered or SSR context
+}
 
+const styles = StyleSheet.create({
+  page: { padding: 40, backgroundColor: '#fffdf7', fontFamily: 'Noto Sans SC' },
+  coverPage: {
+    padding: 40, backgroundColor: '#fffdf7', justifyContent: 'center',
+    alignItems: 'center', fontFamily: 'Noto Sans SC',
+  },
+  coverTitle: { fontSize: 36, fontWeight: 700, color: '#92400e', textAlign: 'center', marginBottom: 16 },
+  coverMeta: { fontSize: 14, color: '#b45309', textAlign: 'center', marginBottom: 8 },
+  image: { width: '100%', height: 280, objectFit: 'cover' as const },
+  textContent: { fontSize: 16, lineHeight: 1.8, color: '#78350f', textAlign: 'center', paddingHorizontal: 20 },
+  pageNumber: { fontSize: 10, color: '#d97706', textAlign: 'center', marginTop: 20, position: 'absolute' as const, bottom: 30, left: 0, right: 0 },
+});
+
+export function StoryPDFDocument({ story }: { story: Story }) {
   const totalPages = story.pages.length;
 
   return (
@@ -69,11 +44,9 @@ export function StoryPDFDocument({ story }: { story: Story }) {
       {story.pages.map((page) => (
         <Page key={page.pageNumber} size="A4" style={styles.page}>
           {page.imageUrl ? (
-            <View style={styles.imageContainer}>
-              <Image src={page.imageUrl} style={styles.image} />
-            </View>
+            <Image src={page.imageUrl} style={styles.image} />
           ) : (
-            <View style={{ width: '100%', height: 280, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center', borderRadius: 8 }}>
+            <View style={{ width: '100%', height: 280, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' }}>
               <Text style={{ fontSize: 14, color: '#d97706' }}>插图不可用</Text>
             </View>
           )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
 import { StoryPDFDocument } from '@/lib/story-pdf';
 
@@ -19,6 +19,7 @@ export default function StoryReaderPage() {
   const [story, setStory] = useState<Story | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/stories/${params.id}`)
@@ -58,6 +59,21 @@ export default function StoryReaderPage() {
 
   const goPrev = () => setCurrentPage(Math.max(0, currentPage - 1));
   const goNext = () => setCurrentPage(Math.min(totalPages - 1, currentPage + 1));
+
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const blob = await pdf(<StoryPDFDocument story={story} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${story.title}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -127,13 +143,13 @@ export default function StoryReaderPage() {
         >
           返回列表
         </button>
-        <PDFDownloadLink
-          document={<StoryPDFDocument story={story} />}
-          fileName={`${story.title}.pdf`}
-          className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white shadow transition hover:bg-amber-600"
+        <button
+          onClick={handleDownloadPDF}
+          disabled={downloading}
+          className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white shadow transition hover:bg-amber-600 disabled:opacity-60"
         >
-          {({ loading }) => (loading ? '生成中...' : '导出 PDF')}
-        </PDFDownloadLink>
+          {downloading ? '生成中...' : '导出 PDF'}
+        </button>
       </div>
     </div>
   );

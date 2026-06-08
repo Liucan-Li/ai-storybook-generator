@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { pdf, Font } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
 import { StoryPDFDocument } from '@/lib/story-pdf';
-import { preloadStoryImages, getCachedImage } from '@/lib/image-cache';
 
 const styleLabels: Record<StoryStyle, string> = {
   watercolor: '水彩',
@@ -21,26 +20,30 @@ export default function StoryReaderPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [imageCache, setImageCache] = useState<Map<string, string>>(new Map());
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [imageDataUrls, setImageDataUrls] = useState<Record<string, string>>({});
 
-  // Pre-load and cache all story images
+  // Pre-fetch all images as data URIs (instant switching, no reload)
   useEffect(() => {
     if (!story?.pages) return;
-    const urls = story.pages.map(p => p.imageUrl).filter(Boolean) as string[];
-    preloadStoryImages(urls).then((cache) => {
-      setImageCache(cache);
-    });
+    const pending: Record<string, string> = {};
+    Promise.all(
+      story.pages.map(async (page) => {
+        if (!page.imageUrl) return;
+        try {
+          const res = await fetch(page.imageUrl);
+          const blob = await res.blob();
+          const dataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          pending[page.imageUrl] = dataUrl;
+        } catch {
+          // Image failed
+        }
+      })
+    ).then(() => setImageDataUrls(pending));
   }, [story]);
-
-  const handleImageLoad = useCallback((pageNumber: number) => {
-    setLoadedImages(prev => new Set(prev).add(pageNumber));
-  }, []);
-
-  const getImageSrc = useCallback((url: string | null): string | null => {
-    if (!url) return null;
-    return imageCache.get(url) || url;
-  }, [imageCache]);
 
   useEffect(() => {
     fetch(`/api/stories/${params.id}`)
@@ -150,23 +153,15 @@ export default function StoryReaderPage() {
         <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-amber-200/50">
           {/* 插图 */}
           <div className="aspect-[4/3] bg-amber-50">
-            {(page.imageUrl && getImageSrc(page.imageUrl)) ? (
-              <>
-                {!loadedImages.has(page.pageNumber) && (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-600" />
-                  </div>
-                )}
-                <img
-                  src={getImageSrc(page.imageUrl)!}
-                  alt={`第 ${page.pageNumber} 页`}
-                  className={`h-full w-full object-cover transition-opacity ${loadedImages.has(page.pageNumber) ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
-                  onLoad={() => handleImageLoad(page.pageNumber)}
-                />
-              </>
+            {page.imageUrl ? (
+              <img
+                src={imageDataUrls[page.imageUrl] || page.imageUrl}
+                alt={`第 ${page.pageNumber} 页`}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-amber-300">
-                {page.imageUrl === null ? '插图生成中...' : '加载中...'}
+                插图生成中...
               </div>
             )}
           </div>

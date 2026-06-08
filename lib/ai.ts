@@ -1,12 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
-import Replicate from 'replicate';
 import { StoryStyle } from '@/types';
 
-if (!process.env.ANTHROPIC_API_KEY) throw new Error('Missing ANTHROPIC_API_KEY');
-if (!process.env.REPLICATE_API_TOKEN) throw new Error('Missing REPLICATE_API_TOKEN');
+const API_BASE = 'https://apihub.agnes-ai.com/v1';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+if (!process.env.AGNES_API_KEY) throw new Error('Missing AGNES_API_KEY');
+const API_KEY = process.env.AGNES_API_KEY;
 
 const STYLE_MAP: Record<StoryStyle, string> = {
   watercolor: 'watercolor illustration style, soft pastel colors, gentle brush strokes',
@@ -17,19 +14,16 @@ const STYLE_MAP: Record<StoryStyle, string> = {
 
 const PAGE_COUNT = 7;
 
-interface ClaudeResponse {
+interface StoryOutline {
   title: string;
   pages: { text: string; imagePrompt: string }[];
 }
 
-function extractJsonFromClaude(text: string): ClaudeResponse {
-  // Strip markdown code fences if present
+function extractJson(text: string): StoryOutline {
   let cleaned = text.trim();
   const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    cleaned = jsonMatch[1].trim();
-  }
-  return JSON.parse(cleaned) as ClaudeResponse;
+  if (jsonMatch) cleaned = jsonMatch[1].trim();
+  return JSON.parse(cleaned) as StoryOutline;
 }
 
 export async function generateStoryOutline(
@@ -37,7 +31,7 @@ export async function generateStoryOutline(
   style: StoryStyle,
   characters: { name: string; description: string; visualClues: string }[],
   ageRange: string
-): Promise<ClaudeResponse> {
+): Promise<StoryOutline> {
   const charDesc = characters
     .map(c => `- ${c.name}（${c.description}）：${c.visualClues}`)
     .join('\n');
@@ -62,16 +56,33 @@ ${charDesc}
 只返回JSON，不要其他文字。`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
+    const res = await fetch(`${API_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'agnes-2.0-flash',
+        messages: [
+          { role: 'system', content: 'You are a professional children\'s story writer.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
     });
 
-    const content = message.content[0];
-    if (content.type !== 'text') throw new Error('Claude returned unexpected content type');
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Agnes API error (${res.status}): ${errText}`);
+    }
 
-    return extractJsonFromClaude(content.text);
+    const data = await res.json();
+    const content: string = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty response from Agnes API');
+
+    return extractJson(content);
   } catch (err) {
     throw new Error(
       err instanceof SyntaxError
@@ -89,27 +100,32 @@ export async function generateIllustration(
   const fullPrompt = `${stylePrefix}. ${imagePrompt}`;
 
   try {
-    const output = await replicate.run(
-      'stability-ai/sdxl:8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f',
-      {
-        input: {
-          prompt: fullPrompt,
-          negative_prompt: 'text, watermark, ugly, deformed',
-          width: 1024,
-          height: 1024,
-          num_outputs: 1,
+    const res = await fetch(`${API_BASE}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'agnes-image-2.1-flash',
+        prompt: fullPrompt,
+        size: '1024x1024',
+        extra_body: {
+          response_format: 'url',
         },
-      }
-    );
+      }),
+    });
 
-    if (Array.isArray(output) && output.length > 0) {
-      return String(output[0]);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Agnes Image API error (${res.status}): ${errText}`);
     }
-    if (typeof output === 'string') return output;
-    if (output && typeof output === 'object' && 'url' in output) {
-      return String((output as { url: string }).url);
-    }
-    throw new Error('Unexpected Replicate output format');
+
+    const data = await res.json();
+    const url: string | null = data.data?.[0]?.url;
+    if (!url) throw new Error('Empty image URL in Agnes response');
+
+    return url;
   } catch {
     throw new Error('插图生成失败，请重试');
   }

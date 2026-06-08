@@ -4,9 +4,9 @@
 
 **Goal:** 实现 MVP 核心链路：用户输入梗概 → AI 生成故事 + 插图 → 在线阅读翻页绘本
 
-**Architecture:** Next.js 14 (App Router) 全栈应用，前端表单收集输入，API Route 调用 Claude 生成故事文本和配图提示词，再通过 Replicate 并行生成插图，结果以 JSON 文件存于本地，阅读页渲染为翻页式绘本。
+**Architecture:** Next.js 14 (App Router) 全栈应用，前端表单收集输入，API Route 调用 Agnes 2.0 Flash 生成故事文本和配图提示词，再通过 Agnes Image 2.1 Flash 并行生成插图，结果以 JSON 文件存于本地，阅读页渲染为翻页式绘本。
 
-**Tech Stack:** Next.js 16, Tailwind CSS v4, Anthropic SDK, Replicate SDK, 文件系统存储
+**Tech Stack:** Next.js 16, Tailwind CSS v4, Agnes AI API, 文件系统存储
 
 ---
 

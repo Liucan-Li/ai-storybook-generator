@@ -37,8 +37,8 @@ interface Page {
 |---|---|
 | 框架 | Next.js 14 (App Router) |
 | 样式 | Tailwind CSS |
-| 文本 AI | Claude API (@anthropic-ai/sdk) |
-| 图像 AI | Replicate (Stable Diffusion) 或 OpenAI DALL-E 3 |
+| 文本 AI | Agnes 2.0 Flash API (OpenAI 兼容) |
+| 图像 AI | Agnes Image 2.1 Flash API |
 | 存储 | 文件系统 (JSON 文件) |
 | PDF 导出 | 延后（MVP 不包含） |
 

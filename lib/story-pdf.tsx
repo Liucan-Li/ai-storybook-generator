@@ -41,10 +41,10 @@ export function StoryPDFDocument({ story }: { story: Story }) {
         </Text>
       </Page>
 
-      {story.pages.map((page) => (
+      {story.pages.map((page: any) => (
         <Page key={page.pageNumber} size="A4" style={styles.page}>
-          {page.imageUrl ? (
-            <Image src={page.imageUrl} style={styles.image} />
+          {(page.imageData || page.imageUrl) ? (
+            <Image src={page.imageData || page.imageUrl} style={styles.image} />
           ) : (
             <View style={{ width: '100%', height: 280, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' }}>
               <Text style={{ fontSize: 14, color: '#d97706' }}>插图不可用</Text>

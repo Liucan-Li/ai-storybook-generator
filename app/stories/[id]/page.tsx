@@ -63,7 +63,27 @@ export default function StoryReaderPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true);
     try {
-      const blob = await pdf(<StoryPDFDocument story={story} />).toBlob();
+      // Pre-fetch all images as base64 data URIs for PDF embedding
+      const pagesWithEmbeddedImages = await Promise.all(
+        story.pages.map(async (page) => {
+          if (!page.imageUrl) return { ...page, imageData: null };
+          try {
+            const res = await fetch(page.imageUrl);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            return { ...page, imageData: dataUrl };
+          } catch {
+            return { ...page, imageData: null };
+          }
+        })
+      );
+
+      const storyWithImages = { ...story, pages: pagesWithEmbeddedImages };
+      const blob = await pdf(<StoryPDFDocument story={storyWithImages} />).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

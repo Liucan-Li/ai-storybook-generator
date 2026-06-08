@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StoryStyle, AgeRange, Character } from '@/types';
+import { saveStory } from '@/lib/story-store';
 
 const styles: { value: StoryStyle; label: string; emoji: string; desc: string }[] = [
   { value: 'watercolor', label: '水彩', emoji: '🎨', desc: '柔和的水彩画风格' },
@@ -79,6 +80,9 @@ export default function CreatePage() {
       }
 
       const data = await res.json();
+
+      // Save to client-side localStorage
+      saveStory(data.story);
 
       if (data.story?.pages?.length) {
         setProgress('正在绘制插图...');

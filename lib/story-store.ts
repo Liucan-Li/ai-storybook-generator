@@ -1,40 +1,36 @@
 import { Story } from '@/types';
-import fs from 'fs';
-import path from 'path';
 
-const STORIES_DIR = path.join(
-  process.env.VERCEL ? '/tmp' : process.cwd(),
-  '.stories'
-);
+const STORAGE_KEY = 'storybook-stories';
 
-function ensureDir() {
-  if (!fs.existsSync(STORIES_DIR)) {
-    fs.mkdirSync(STORIES_DIR, { recursive: true });
+function loadAll(): Story[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) as Story[] : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAll(stories: Story[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stories));
+  } catch {
+    // localStorage full or unavailable
   }
 }
 
 export function saveStory(story: Story): void {
-  ensureDir();
-  const filePath = path.join(STORIES_DIR, `${story.id}.json`);
-  fs.writeFileSync(filePath, JSON.stringify(story, null, 2), 'utf-8');
+  const stories = loadAll();
+  stories.unshift(story);
+  saveAll(stories);
 }
 
 export function getStory(id: string): Story | null {
-  const filePath = path.join(STORIES_DIR, `${id}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  try {
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(raw) as Story;
-  } catch {
-    return null;
-  }
+  const stories = loadAll();
+  return stories.find(s => s.id === id) || null;
 }
 
 export function listStories(): Story[] {
-  ensureDir();
-  const files = fs.readdirSync(STORIES_DIR).filter(f => f.endsWith('.json'));
-  return files
-    .map(f => getStory(f.replace('.json', '')))
-    .filter((s): s is Story => s !== null)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return loadAll();
 }

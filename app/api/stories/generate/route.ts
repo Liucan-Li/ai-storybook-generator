@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { GenerateRequest, Story, Page } from '@/types';
 import { generateStoryOutline, generateIllustration, buildImagePrompt } from '@/lib/ai';
-import { saveStory } from '@/lib/story-store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +47,8 @@ export async function POST(request: NextRequest) {
       } as Page;
     });
 
-    // Step 3: 保存故事
+    // Step 3: Build story object (client saves to localStorage)
+
     const story: Story = {
       id: uuidv4(),
       title: outline.title,
@@ -58,8 +58,6 @@ export async function POST(request: NextRequest) {
       pages,
       createdAt: new Date().toISOString(),
     };
-
-    saveStory(story);
 
     return NextResponse.json({ story });
   } catch (error) {

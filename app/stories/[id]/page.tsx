@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { pdf, Font } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
 import { StoryPDFDocument } from '@/lib/story-pdf';
+import { getStory } from '@/lib/story-store';
 
 const styleLabels: Record<StoryStyle, string> = {
   watercolor: '水彩',
@@ -33,13 +34,9 @@ export default function StoryReaderPage() {
   };
 
   useEffect(() => {
-    fetch(`/api/stories/${params.id}`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (data?.story) setStory(data.story);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    const s = getStory(params.id as string);
+    setStory(s);
+    setLoading(false);
   }, [params.id]);
 
   if (loading) {

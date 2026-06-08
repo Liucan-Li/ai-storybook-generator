@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { listStories } from '@/lib/story-store';
 import { StoryStyle } from '@/types';
@@ -17,7 +20,22 @@ const styleColors: Record<StoryStyle, string> = {
 };
 
 export default function HomePage() {
-  const stories = listStories();
+  const [stories, setStories] = useState<ReturnType<typeof listStories>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setStories(listStories());
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mt-20 text-center text-amber-700">
+        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-600" />
+        加载中...
+      </div>
+    );
+  }
 
   return (
     <div>

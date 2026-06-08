@@ -39,6 +39,21 @@ export default function StoryReaderPage() {
     setLoading(false);
   }, [params.id]);
 
+  // Navigation callbacks — must be declared before early returns (Rules of Hooks)
+  const totalPages = story?.pages?.length || 0;
+  const goPrev = useCallback(() => setCurrentPage(c => Math.max(0, c - 1)), []);
+  const goNext = useCallback(() => setCurrentPage(c => Math.min(totalPages - 1, c + 1)), [totalPages]);
+
+  const touchStartX = useRef(0);
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) < 50) return;
+    if (diff > 0) goNext(); else goPrev();
+  }, [goPrev, goNext]);
+
   if (loading) {
     return (
       <div className="mt-20 text-center text-amber-700">
@@ -63,21 +78,6 @@ export default function StoryReaderPage() {
   }
 
   const page = story.pages[currentPage];
-  const totalPages = story.pages.length;
-
-  const goPrev = useCallback(() => setCurrentPage(c => Math.max(0, c - 1)), []);
-  const goNext = useCallback(() => setCurrentPage(c => Math.min(totalPages - 1, c + 1)), [totalPages]);
-
-  // Touch swipe gesture
-  const touchStartX = useRef(0);
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  }, []);
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) < 50) return; // minimum swipe distance
-    if (diff > 0) goNext(); else goPrev();
-  }, [goPrev, goNext]);
 
   const handleDownloadPDF = async () => {
     setDownloading(true);

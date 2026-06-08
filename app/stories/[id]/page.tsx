@@ -20,6 +20,17 @@ export default function StoryReaderPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [erroredImages, setErroredImages] = useState<Set<number>>(new Set());
+
+  const handleImageLoad = (pageNumber: number) => {
+    setLoadedImages(prev => new Set(prev).add(pageNumber));
+  };
+
+  const handleImageError = (pageNumber: number) => {
+    setErroredImages(prev => new Set(prev).add(pageNumber));
+    setLoadedImages(prev => new Set(prev).add(pageNumber));
+  };
 
   useEffect(() => {
     fetch(`/api/stories/${params.id}`)
@@ -128,14 +139,23 @@ export default function StoryReaderPage() {
           {/* 插图 */}
           <div className="aspect-[4/3] bg-amber-50">
             {page.imageUrl ? (
-              <img
-                src={page.imageUrl}
-                alt={`第 ${page.pageNumber} 页`}
-                className="h-full w-full object-cover"
-              />
+              <>
+                {!loadedImages.has(page.pageNumber) && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-300 border-t-amber-600" />
+                  </div>
+                )}
+                <img
+                  src={page.imageUrl}
+                  alt={`第 ${page.pageNumber} 页`}
+                  className={`h-full w-full object-cover transition-opacity duration-300 ${loadedImages.has(page.pageNumber) ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+                  onLoad={() => handleImageLoad(page.pageNumber)}
+                  onError={() => handleImageError(page.pageNumber)}
+                />
+              </>
             ) : (
               <div className="flex h-full items-center justify-center text-amber-300">
-                插图生成中...
+                插图不可用
               </div>
             )}
           </div>

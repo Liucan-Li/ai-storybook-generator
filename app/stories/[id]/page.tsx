@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
+import { StoryPDFDocument } from '@/lib/story-pdf';
 
 const styleLabels: Record<StoryStyle, string> = {
   watercolor: '水彩',
@@ -125,6 +127,13 @@ export default function StoryReaderPage() {
         >
           返回列表
         </button>
+        <PDFDownloadLink
+          document={<StoryPDFDocument story={story} />}
+          fileName={`${story.title}.pdf`}
+          className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white shadow transition hover:bg-amber-600"
+        >
+          {({ loading }) => (loading ? '生成中...' : '导出 PDF')}
+        </PDFDownloadLink>
       </div>
     </div>
   );

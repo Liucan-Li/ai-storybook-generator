@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { pdf, Font } from '@react-pdf/renderer';
 import { Story, StoryStyle } from '@/types';
@@ -65,8 +65,19 @@ export default function StoryReaderPage() {
   const page = story.pages[currentPage];
   const totalPages = story.pages.length;
 
-  const goPrev = () => setCurrentPage(Math.max(0, currentPage - 1));
-  const goNext = () => setCurrentPage(Math.min(totalPages - 1, currentPage + 1));
+  const goPrev = useCallback(() => setCurrentPage(c => Math.max(0, c - 1)), []);
+  const goNext = useCallback(() => setCurrentPage(c => Math.min(totalPages - 1, c + 1)), [totalPages]);
+
+  // Touch swipe gesture
+  const touchStartX = useRef(0);
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) < 50) return; // minimum swipe distance
+    if (diff > 0) goNext(); else goPrev();
+  }, [goPrev, goNext]);
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
@@ -131,7 +142,11 @@ export default function StoryReaderPage() {
       </div>
 
       {/* 翻页容器 */}
-      <div className="relative w-full max-w-lg">
+      <div
+        className="relative w-full max-w-lg touch-pan-y select-none"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {/* 页面卡片 */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-amber-200/50">
           {/* 插图 */}

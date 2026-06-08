@@ -3,9 +3,10 @@ import { getStory } from '@/lib/story-store';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const story = getStory(params.id);
+  const { id } = await params;
+  const story = getStory(id);
 
   if (!story) {
     return NextResponse.json({ error: '故事未找到' }, { status: 404 });

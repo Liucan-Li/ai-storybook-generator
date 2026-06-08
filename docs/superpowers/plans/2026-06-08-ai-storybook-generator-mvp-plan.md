@@ -6,7 +6,7 @@
 
 **Architecture:** Next.js 14 (App Router) 全栈应用，前端表单收集输入，API Route 调用 Claude 生成故事文本和配图提示词，再通过 Replicate 并行生成插图，结果以 JSON 文件存于本地，阅读页渲染为翻页式绘本。
 
-**Tech Stack:** Next.js 14, Tailwind CSS, Anthropic SDK, Replicate SDK, 文件系统存储
+**Tech Stack:** Next.js 16, Tailwind CSS v4, Anthropic SDK, Replicate SDK, 文件系统存储
 
 ---
 
@@ -124,7 +124,7 @@ export interface Page {
   pageNumber: number;
   text: string;
   imagePrompt: string;
-  imageUrl: string;
+  imageUrl: string | null;     // null until image generation completes
 }
 
 export interface Story {
@@ -289,12 +289,13 @@ export async function generateIllustration(
   const fullPrompt = `${stylePrefix}. ${imagePrompt}`;
 
   const output = await replicate.run(
-    'stability-ai/stable-diffusion-3:1c5e9f2b7b5a4c3d8e0f1a2b3c4d5e6f',
+    'stability-ai/sdxl:8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f',
     {
       input: {
         prompt: fullPrompt,
         negative_prompt: 'text, watermark, ugly, deformed',
-        image_size: '1024x1024',
+        width: 1024,
+        height: 1024,
         num_outputs: 1,
       },
     }

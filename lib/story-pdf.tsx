@@ -1,17 +1,17 @@
 import { Document, Page, Image, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { Story } from '@/types';
 
-// Register a font that supports Chinese
+// Register a font that supports Chinese (served locally from public/fonts/)
 Font.register({
   family: 'Noto Sans SC',
-  src: 'https://fonts.gstatic.com/s/notosanssc/v36/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_EnYxNbPzS5HE.ttf',
+  src: '/fonts/NotoSansSC-Regular.ttf',
   fontStyle: 'normal',
   fontWeight: 400,
 });
 
 Font.register({
   family: 'Noto Sans SC',
-  src: 'https://fonts.gstatic.com/s/notosanssc/v36/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnIxNbPzS5HE.ttf',
+  src: '/fonts/NotoSansSC-Bold.ttf',
   fontStyle: 'normal',
   fontWeight: 700,
 });

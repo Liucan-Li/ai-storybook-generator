@@ -2,8 +2,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import Replicate from 'replicate';
 import { StoryStyle } from '@/types';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN! });
+if (!process.env.ANTHROPIC_API_KEY) throw new Error('Missing ANTHROPIC_API_KEY');
+if (!process.env.REPLICATE_API_TOKEN) throw new Error('Missing REPLICATE_API_TOKEN');
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
 const STYLE_MAP: Record<StoryStyle, string> = {
   watercolor: 'watercolor illustration style, soft pastel colors, gentle brush strokes',
@@ -17,6 +20,16 @@ const PAGE_COUNT = 7;
 interface ClaudeResponse {
   title: string;
   pages: { text: string; imagePrompt: string }[];
+}
+
+function extractJsonFromClaude(text: string): ClaudeResponse {
+  // Strip markdown code fences if present
+  let cleaned = text.trim();
+  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    cleaned = jsonMatch[1].trim();
+  }
+  return JSON.parse(cleaned) as ClaudeResponse;
 }
 
 export async function generateStoryOutline(
@@ -48,17 +61,24 @@ ${charDesc}
 
 只返回JSON，不要其他文字。`;
 
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    });
 
-  const content = message.content[0];
-  if (content.type !== 'text') throw new Error('Unexpected response type');
+    const content = message.content[0];
+    if (content.type !== 'text') throw new Error('Claude returned unexpected content type');
 
-  const json = JSON.parse(content.text) as ClaudeResponse;
-  return json;
+    return extractJsonFromClaude(content.text);
+  } catch (err) {
+    throw new Error(
+      err instanceof SyntaxError
+        ? 'AI 返回了格式错误的结果，请重试'
+        : '故事生成失败，请稍后重试'
+    );
+  }
 }
 
 export async function generateIllustration(
@@ -68,27 +88,38 @@ export async function generateIllustration(
   const stylePrefix = STYLE_MAP[style];
   const fullPrompt = `${stylePrefix}. ${imagePrompt}`;
 
-  const output = await replicate.run(
-    'stability-ai/sdxl:8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f',
-    {
-      input: {
-        prompt: fullPrompt,
-        negative_prompt: 'text, watermark, ugly, deformed',
-        width: 1024,
-        height: 1024,
-        num_outputs: 1,
-      },
-    }
-  );
+  try {
+    const output = await replicate.run(
+      'stability-ai/sdxl:8beff3369e81422112d93b89ca01426147de542cd4684c244b673b105188fe5f',
+      {
+        input: {
+          prompt: fullPrompt,
+          negative_prompt: 'text, watermark, ugly, deformed',
+          width: 1024,
+          height: 1024,
+          num_outputs: 1,
+        },
+      }
+    );
 
-  const url = Array.isArray(output) ? String(output[0]) : String(output);
-  return url;
+    if (Array.isArray(output) && output.length > 0) {
+      return String(output[0]);
+    }
+    if (typeof output === 'string') return output;
+    if (output && typeof output === 'object' && 'url' in output) {
+      return String((output as { url: string }).url);
+    }
+    throw new Error('Unexpected Replicate output format');
+  } catch {
+    throw new Error('插图生成失败，请重试');
+  }
 }
 
 export function buildImagePrompt(
   pagePrompt: string,
   characters: { name: string; visualClues: string }[]
 ): string {
+  if (characters.length === 0) return pagePrompt;
   const charVisuals = characters.map(c => `${c.name}（${c.visualClues}）`).join(', ');
   return `${pagePrompt} Characters: ${charVisuals}.`;
 }

@@ -135,7 +135,7 @@ export default function StoryReaderPage() {
         {/* 页面卡片 */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-xl shadow-amber-200/50">
           {/* 插图 */}
-          <div className="aspect-[4/3] bg-amber-50">
+          <div className="aspect-[4/3] bg-amber-50 relative">
             {page.imageUrl ? (
               <>
                 {!loadedImages.has(page.pageNumber) && (
@@ -156,32 +156,33 @@ export default function StoryReaderPage() {
                 插图不可用
               </div>
             )}
+            {/* 左右翻页按钮 - 悬浮在图片区域 */}
+            <button
+              onClick={goPrev}
+              disabled={currentPage === 0}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm transition hover:bg-white active:scale-95 disabled:opacity-30"
+              aria-label="上一页"
+            >
+              <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={goNext}
+              disabled={currentPage === totalPages - 1}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm transition hover:bg-white active:scale-95 disabled:opacity-30"
+              aria-label="下一页"
+            >
+              <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
           {/* 文字 */}
           <div className="p-6 text-center">
             <p className="text-lg leading-relaxed text-amber-900">{page.text}</p>
           </div>
         </div>
-
-        {/* 左右翻页按钮 */}
-        <button
-          onClick={goPrev}
-          disabled={currentPage === 0}
-          className="absolute left-0 top-1/2 -translate-x-12 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white disabled:opacity-30"
-        >
-          <svg className="h-6 w-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <button
-          onClick={goNext}
-          disabled={currentPage === totalPages - 1}
-          className="absolute right-0 top-1/2 translate-x-12 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-md transition hover:bg-white disabled:opacity-30"
-        >
-          <svg className="h-6 w-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
       </div>
 
       {/* 页码 */}
